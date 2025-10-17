@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Word Matching Game — Vocabulary Q–R</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Inter, sans-serif;
+      background: #e5f3ed;
+      margin: 0; padding: 20px;
+      color: #111827;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .game {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .column {
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      min-height: 500px;
+    }
+    .word, .definition {
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #f9fafb;
+      cursor: grab;
+    }
+    .definition {
+      background: #f3f4f6;
+      min-height: 50px;
+    }
+    .definition.correct {
+      background: #d1fae5;
+      border-color: #10b981;
+      color: #065f46;
+    }
+    .definition.incorrect {
+      animation: shake 0.3s;
+      background: #fee2e2;
+      border-color: #dc2626;
+    }
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-5px); }
+      100% { transform: translateX(0); }
+    }
+    .status {
+      text-align: center;
+      margin-top: 20px;
+      font-weight: 600;
+    }
+    button {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Word Matching Game — Vocabulary Q–R</h1>
+  <div class="game">
+    <div class="column" id="words"></div>
+    <div class="column" id="definitions"></div>
+  </div>
+  <div class="status" id="status">Matches: 0</div>
+  <button id="nextBtn" onclick="nextRound()">Next Round</button>
+  <button onclick="resetGame()">Restart Game</button>
+
+<script>
+const CARDS = [
+  {w:"Qualitative", d:"Related to the quality or nature of something, not numbers."},
+  {w:"Quote", d:"To repeat someone’s exact words."},
+  {w:"Radical", d:"Very different from the usual; extreme."},
+  {w:"Range", d:"A set of different things, often between two limits"},
+  {w:"Ratio", d:"A comparison between two numbers or amounts"},
+  {w:"Rational", d:"Based on reason, not emotion"},
+  {w:"Recover", d:"To get better after being sick or hurt; to make better"},
+  {w:"Refine", d:"To improve something by making small changes."},
+  {w:"Regime", d:"A system of government or a way of managing something"},
+  {w:"Register", d:"To officially record or sign up for something"},
+  {w:"Regulate", d:"To control by rules"},
+  {w:"Reinforce", d:"To make something stronger."},
+  {w:"Reject", d:"To say no to something or refuse it"},
+  {w:"Relevant", d:"Connected to the topic"},
+  {w:"Reluctance", d:"Not wanting to do something."},
+  {w:"Rely", d:"To depend on someone or something"},
+  {w:"Require", d:"To need something"},
+  {w:"Research", d:"Careful study to find out new information"},
+  {w:"Reside", d:"To live in a place"},
+  {w:"Resolve", d:"To solve a problem or difficulty"},
+  {w:"Resource", d:"Something that helps you do something (e.g., time, money, books)"},
+  {w:"Respond", d:"To answer or react to something"},
+  {w:"Restore", d:"To bring something back to its original state."},
+  {w:"Restrain", d:"To hold back or stop something."},
+  {w:"Restrict", d:"To limit or control"},
+  {w:"Retain", d:"To keep something or continue to have it"},
+  {w:"Reveal", d:"To show or make something known"},
+  {w:"Revenue", d:"Money a business or government receives"},
+  {w:"Revise", d:"To change something to make it better."},
+  {w:"Revolution", d:"A big change in how things are done, or the forceful change of a government."},
+  {w:"Rigid", d:"Not flexible; hard to bend or change."}
+];
+
+let currentRound = 1;
+const totalRounds = 2;
+let matches = 0;
+let roundCards = [];
+
+function shuffle(arr) {
+  return arr.map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+}
+
+function getRoundCards(round) {
+  const chunkSize = Math.ceil(CARDS.length / totalRounds);
+  const start = (round - 1) * chunkSize;
+  return CARDS.slice(start, start + chunkSize);
+}
+
+function initGame() {
+  document.getElementById('words').innerHTML = '';
+  document.getElementById('definitions').innerHTML = '';
+  matches = 0;
+  updateStatus();
+
+  roundCards = getRoundCards(currentRound);
+  const shuffledDefs = shuffle([...roundCards]);
+
+  roundCards.forEach(card => {
+    let wordDiv = document.createElement('div');
+    wordDiv.className = 'word';
+    wordDiv.textContent = card.w;
+    wordDiv.draggable = true;
+    wordDiv.dataset.word = card.w;
+    wordDiv.addEventListener('dragstart', dragStart);
+    document.getElementById('words').appendChild(wordDiv);
+  });
+
+  shuffledDefs.forEach(card => {
+    let defDiv = document.createElement('div');
+    defDiv.className = 'definition';
+    defDiv.textContent = card.d;
+    defDiv.dataset.word = card.w;
+    defDiv.addEventListener('dragover', dragOver);
+    defDiv.addEventListener('drop', drop);
+    document.getElementById('definitions').appendChild(defDiv);
+  });
+
+  document.getElementById('nextBtn').style.display = 'none';
+}
+
+function dragStart(e) {
+  e.dataTransfer.setData('text/plain', e.target.dataset.word);
+}
+
+function dragOver(e) {
+  e.preventDefault();
+}
+
+function drop(e) {
+  e.preventDefault();
+  let draggedWord = e.dataTransfer.getData('text/plain');
+  let targetWord = e.target.dataset.word;
+
+  if (draggedWord === targetWord) {
+    e.target.classList.add('correct');
+    e.target.textContent = draggedWord + " — " + e.target.textContent;
+    matches++;
+    updateStatus();
+    let draggedEl = document.querySelector(`.word[data-word="${draggedWord}"]`);
+    if (draggedEl) draggedEl.remove();
+
+    if (matches === roundCards.length) {
+      if (currentRound < totalRounds) {
+        document.getElementById('nextBtn').style.display = 'block';
+      } else {
+        document.getElementById('status').textContent = "🎉 All rounds complete! Great job!";
+      }
+    }
+  } else {
+    e.target.classList.add('incorrect');
+    setTimeout(() => e.target.classList.remove('incorrect'), 400);
+  }
+}
+
+function updateStatus() {
+  document.getElementById('status').textContent = `Round ${currentRound}/${totalRounds} — Matches: ${matches} / ${roundCards.length}`;
+}
+
+function nextRound() {
+  if (currentRound < totalRounds) {
+    currentRound++;
+    initGame();
+  }
+}
+
+function resetGame() {
+  currentRound = 1;
+  initGame();
+}
+
+initGame();
+</script>
+</body>
+</html>
